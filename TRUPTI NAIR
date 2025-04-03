@@ -1,0 +1,144 @@
+Easy:-
+import org.springframework.context.annotation.*;
+
+class Course {
+    private String courseName;
+    private int duration;
+    public Course(String courseName, int duration) {
+        this.courseName = courseName;
+        this.duration = duration;
+    }
+    @Override
+    public String toString() {
+        return "Course{name='" + courseName + "', duration=" + duration + " weeks}";
+    }
+}
+
+class Student {
+    private String name;
+    private Course course;
+
+    public Student(String name, Course course) {
+        this.name = name;
+        this.course = course;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{name='" + name + "', course=" + course + "}";
+    }
+}
+@Configuration
+class AppConfig {
+    @Bean
+    public Course course() {
+        return new Course("Spring Framework", 6);
+    }
+    @Bean
+    public Student student() {
+        return new Student("Alice", course());
+    }
+}
+public class SpringDIExample {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        Student student = context.getBean(Student.class);
+        System.out.println(student);
+        context.close();
+    }
+}
+
+Medium:-
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
+
+import javax.persistence.*;
+import java.util.List;
+
+@Entity
+@Table(name = "students")
+class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private String name;
+    private int age;
+
+    public Student() {}
+
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public int getAge() { return age; }
+    public void setAge(int age) { this.age = age; }
+
+    @Override
+    public String toString() {
+        return "Student{id=" + id + ", name='" + name + "', age=" + age + "}";
+    }
+}
+
+public class HibernateCRUD {
+    private static SessionFactory factory;
+
+    static {
+        factory = new Configuration().configure("hibernate.cfg.xml").addAnnotatedClass(Student.class).buildSessionFactory();
+    }
+
+    public static void createStudent(String name, int age) {
+        Session session = factory.openSession();
+        Transaction transaction = session.beginTransaction();
+        Student student = new Student(name, age);
+        session.save(student);
+        transaction.commit();
+        session.close();
+    }
+
+    public static List<Student> readStudents() {
+        Session session = factory.openSession();
+        List<Student> students = session.createQuery("from Student", Student.class).list();
+        session.close();
+        return students;
+    }
+
+    public static void updateStudent(int id, String newName, int newAge) {
+        Session session = factory.openSession();
+        Transaction transaction = session.beginTransaction();
+        Student student = session.get(Student.class, id);
+        if (student != null) {
+            student.setName(newName);
+            student.setAge(newAge);
+            session.update(student);
+        }
+        transaction.commit();
+        session.close();
+    }
+
+    public static void deleteStudent(int id) {
+        Session session = factory.openSession();
+        Transaction transaction = session.beginTransaction();
+        Student student = session.get(Student.class, id);
+        if (student != null) {
+            session.delete(student);
+        }
+        transaction.commit();
+        session.close();
+    }
+    public static void main(String[] args) {
+        createStudent("Alice", 22);
+        createStudent("Bob", 25);
+        System.out.println("Students: " + readStudents());
+        updateStudent(1, "Alice Smith", 23);
+        System.out.println("Updated Students: " + readStudents());
+        deleteStudent(2);
+        System.out.println("Students after deletion: " + readStudents());
+    }
+}
+
